@@ -2,9 +2,8 @@ use anyhow::{anyhow, Result};
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs::OpenOptions;
-use std::io::Write;
 use url::Url;
+use crate::utils::log_debug;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Torrent {
@@ -86,17 +85,6 @@ impl QBittorrentClient {
         }
     }
 
-    fn log_debug(&self, message: &str) {
-        if let Ok(mut file) = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("qbittui_debug.log")
-        {
-            let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
-            let _ = writeln!(file, "[{}] {}", timestamp, message);
-        }
-    }
-
     pub async fn login(&mut self, username: &str, password: &str) -> Result<()> {
         let login_url = self.base_url.join("/api/v2/auth/login")?;
 
@@ -166,48 +154,48 @@ impl QBittorrentClient {
         }
     }
 
-    pub async fn pause_torrent(&self, hash: &str) -> Result<()> {
+    pub async fn pause_torrent(&self, hash: &str, timezone: &str) -> Result<()> {
         self.ensure_authenticated().await?;
 
         let url = self.base_url.join("/api/v2/torrents/stop")?;
         let mut params = HashMap::new();
         params.insert("hashes", hash);
 
-        self.log_debug(&format!("Pausing torrent with hash: {}", hash));
-        self.log_debug(&format!("Request URL: {}", url));
+        log_debug(&format!("Pausing torrent with hash: {}", hash), timezone);
+        log_debug(&format!("Request URL: {}", url), timezone);
 
         let response = self.client.post(url).form(&params).send().await?;
 
         if response.status().is_success() {
-            self.log_debug("Pause successful");
+            log_debug("Pause successful", timezone);
             Ok(())
         } else {
             let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "Unable to read response body".to_string());
-            self.log_debug(&format!("Pause failed - Status: {}, Body: {}", status, body));
-            Err(anyhow!("Failed to pause torrent: {} - {}", status, body))
+            let body = response.text().await.unwrap_or_default();
+            log_debug(&format!("Pause failed - Status: {}, Body: {}", status, body), timezone);
+            Err(anyhow!("Failed to pause torrent: {}", status))
         }
     }
 
-    pub async fn resume_torrent(&self, hash: &str) -> Result<()> {
+    pub async fn resume_torrent(&self, hash: &str, timezone: &str) -> Result<()> {
         self.ensure_authenticated().await?;
 
         let url = self.base_url.join("/api/v2/torrents/start")?;
         let mut params = HashMap::new();
         params.insert("hashes", hash);
 
-        self.log_debug(&format!("Resuming torrent with hash: {}", hash));
-        self.log_debug(&format!("Request URL: {}", url));
+        log_debug(&format!("Resuming torrent with hash: {}", hash), timezone);
+        log_debug(&format!("Request URL: {}", url), timezone);
 
         let response = self.client.post(url).form(&params).send().await?;
 
         if response.status().is_success() {
-            self.log_debug("Resume successful");
+            log_debug("Resume successful", timezone);
             Ok(())
         } else {
             let status = response.status();
             let body = response.text().await.unwrap_or_else(|_| "Unable to read response body".to_string());
-            self.log_debug(&format!("Resume failed - Status: {}, Body: {}", status, body));
+            log_debug(&format!("Resume failed - Status: {}, Body: {}", status, body), timezone);
             Err(anyhow!("Failed to resume torrent: {} - {}", status, body))
         }
     }

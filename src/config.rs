@@ -7,6 +7,7 @@ use std::path::Path;
 pub struct Config {
     pub url: Option<String>,
     pub username: Option<String>,
+    pub timezone: Option<String>,
 }
 
 impl Default for Config {
@@ -14,6 +15,7 @@ impl Default for Config {
         Self {
             url: None,
             username: None,
+            timezone: Some("UTC".to_string()), // Default to UTC
         }
     }
 }
@@ -61,5 +63,14 @@ impl Config {
 
     pub fn get_last_username(&self) -> Option<String> {
         self.username.clone()
+    }
+
+    pub fn get_timezone(&self) -> String {
+        self.timezone.clone().unwrap_or_else(|| "UTC".to_string())
+    }
+
+    pub fn set_timezone(&mut self, timezone: &str) -> Result<()> {
+        self.timezone = Some(timezone.to_string());
+        self.save()
     }
 }

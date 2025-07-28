@@ -1,9 +1,8 @@
-use crate::api::{QBittorrentClient, Torrent, ServerState};
+use crate::api::{QBittorrentClient, ServerState, Torrent};
 use crate::config::Config;
+use crate::utils::log_debug;
 use anyhow::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::time::{Duration, Instant};
 use url::Url;
 
@@ -56,8 +55,12 @@ pub struct App {
 
 impl App {
     pub async fn new(base_url: Url, username: Option<String>, password: Option<String>) -> Result<Self> {
-        let client = QBittorrentClient::new(base_url.clone());
         let config = Config::load();
+        Self::new_with_config(base_url, username, password, config).await
+    }
+
+    pub async fn new_with_config(base_url: Url, username: Option<String>, password: Option<String>, config: Config) -> Result<Self> {
+        let client = QBittorrentClient::new(base_url.clone());
 
         // Use saved config if no CLI args provided
         let (initial_url, initial_username) = if username.is_none() && password.is_none() {
@@ -108,17 +111,6 @@ impl App {
         }
 
         Ok(app)
-    }
-
-    fn log_debug(&self, message: &str) {
-        if let Ok(mut file) = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open("qbittui_debug.log")
-        {
-            let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
-            let _ = writeln!(file, "[{}] {}", timestamp, message);
-        }
     }
 
     pub async fn handle_event(&mut self, event: crossterm::event::Event) -> Result<bool> {
@@ -308,15 +300,15 @@ impl App {
             KeyCode::Char(' ') => {
                 if let Some(torrent) = self.get_current_selected_torrent() {
                     let hash = torrent.hash.clone();
-                    self.log_debug(&format!("Torrent state: '{}', name: '{}'", torrent.state, torrent.name));
+                    log_debug(&format!("Torrent state: '{}', name: '{}'", torrent.state, torrent.name), &self.config.get_timezone());
                     match torrent.state.as_str() {
                         "pausedDL" | "pausedUP" | "stoppedDL" | "stoppedUP" => {
-                            self.log_debug("Attempting to resume torrent");
-                            self.client.resume_torrent(&hash).await?;
+                            log_debug("Attempting to resume torrent", &self.config.get_timezone());
+                            self.client.resume_torrent(&hash, &self.config.get_timezone()).await?;
                         }
                         _ => {
-                            self.log_debug("Attempting to pause torrent");
-                            self.client.pause_torrent(&hash).await?;
+                            log_debug("Attempting to pause torrent", &self.config.get_timezone());
+                            self.client.pause_torrent(&hash, &self.config.get_timezone()).await?;
                         }
                     }
                     self.refresh_data().await?;
@@ -441,9 +433,9 @@ impl App {
                 // Save successful connection info to config
                 let current_url = self.client.get_base_url().to_string();
                 if let Err(e) = self.config.update_connection_info(&current_url, &self.username_input) {
-                    self.log_debug(&format!("Failed to save config: {}", e));
+                    log_debug(&format!("Failed to save config: {}", e), &self.config.get_timezone());
                 } else {
-                    self.log_debug("Successfully saved connection info to config");
+                    log_debug("Successfully saved connection info to config", &self.config.get_timezone());
                 }
 
                 self.state = AppState::Main;

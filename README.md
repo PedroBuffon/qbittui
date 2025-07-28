@@ -61,6 +61,21 @@ The application will save your URL and username for future sessions.
 qbittui --help
 ```
 
+#### Setting Timezone
+
+You can configure the timezone for log timestamps:
+
+```bash
+# Set timezone to US Eastern Time
+qbittui --timezone US/Eastern
+
+# Set timezone to Central European Time
+qbittui --timezone Europe/Paris
+
+# List available timezones
+qbittui --list-timezones
+```
+
 ### Keyboard Shortcuts
 
 #### Navigation
@@ -91,15 +106,19 @@ qBittUI automatically creates a configuration file (`qbittui_config.json`) that 
 
 - Last used WebUI URL
 - Username (passwords are never saved for security)
+- Timezone for log timestamps
 
 Example configuration:
 
 ```json
 {
   "url": "http://localhost:8080",
-  "username": "admin"
+  "username": "admin",
+  "timezone": "US/Eastern"
 }
 ```
+
+You can manually edit this file or use the `--timezone` command line option to set the timezone.
 
 ## Torrent States
 

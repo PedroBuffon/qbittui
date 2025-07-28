@@ -23,5 +23,5 @@ Thumbs.db
 
 # Config files (may contain sensitive data)
 config.toml
-*.config.json
+*config.json
 .env

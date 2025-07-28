@@ -3,6 +3,7 @@ mod app;
 mod config;
 mod ui;
 mod event;
+mod utils;
 
 use anyhow::Result;
 use clap::Parser;
@@ -21,7 +22,6 @@ use url::Url;
 use app::App;
 use event::EventHandler;
 use ui::draw;
-// use api::QBittorrentClient;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -37,11 +37,44 @@ struct Args {
     /// Password for authentication
     #[arg(short, long)]
     password: Option<String>,
+
+    /// Set timezone for logs (e.g., UTC, US/Eastern, Europe/London)
+    #[arg(long)]
+    timezone: Option<String>,
+
+    /// List available timezones
+    #[arg(long)]
+    list_timezones: bool,
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+
+    // Handle list timezones command
+    if args.list_timezones {
+        println!("Available timezones:");
+        for tz in utils::get_common_timezones() {
+            println!("  {}", tz);
+        }
+        println!("\nYou can use any valid timezone from the IANA Time Zone Database.");
+        println!("Example: qbittui --timezone US/Eastern");
+        return Ok(());
+    }
+
+    // Load config
+    let mut config = config::Config::load();
+
+    // Set timezone if provided
+    if let Some(timezone) = &args.timezone {
+        if utils::is_valid_timezone(timezone) {
+            config.set_timezone(timezone)?;
+            println!("Timezone set to: {}", timezone);
+        } else {
+            eprintln!("Invalid timezone: {}. Use --list-timezones to see available options.", timezone);
+            return Ok(());
+        }
+    }
 
     // Validate URL
     let base_url = Url::parse(&args.url)?;
@@ -54,7 +87,7 @@ async fn main() -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     // Create app and event handler
-    let mut app = App::new(base_url, args.username, args.password).await?;
+    let mut app = App::new_with_config(base_url, args.username, args.password, config).await?;
     let mut event_handler = EventHandler::new();
 
     // Main loop
