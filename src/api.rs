@@ -1,9 +1,9 @@
-use anyhow::{anyhow, Result};
+use crate::utils::log_debug;
+use anyhow::{Result, anyhow};
 use reqwest::Client;
 use serde::Deserialize;
 use std::collections::HashMap;
 use url::Url;
-use crate::utils::log_debug;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Torrent {
@@ -92,12 +92,7 @@ impl QBittorrentClient {
         params.insert("username", username);
         params.insert("password", password);
 
-        let response = self
-            .client
-            .post(login_url)
-            .form(&params)
-            .send()
-            .await?;
+        let response = self.client.post(login_url).form(&params).send().await?;
 
         if response.status().is_success() {
             let text = response.text().await?;
@@ -172,7 +167,10 @@ impl QBittorrentClient {
         } else {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
-            log_debug(&format!("Pause failed - Status: {}, Body: {}", status, body), timezone);
+            log_debug(
+                &format!("Pause failed - Status: {}, Body: {}", status, body),
+                timezone,
+            );
             Err(anyhow!("Failed to pause torrent: {}", status))
         }
     }
@@ -194,8 +192,14 @@ impl QBittorrentClient {
             Ok(())
         } else {
             let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "Unable to read response body".to_string());
-            log_debug(&format!("Resume failed - Status: {}, Body: {}", status, body), timezone);
+            let body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unable to read response body".to_string());
+            log_debug(
+                &format!("Resume failed - Status: {}, Body: {}", status, body),
+                timezone,
+            );
             Err(anyhow!("Failed to resume torrent: {} - {}", status, body))
         }
     }
@@ -214,7 +218,10 @@ impl QBittorrentClient {
             Ok(())
         } else {
             let status = response.status();
-            let body = response.text().await.unwrap_or_else(|_| "Unable to read response body".to_string());
+            let body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unable to read response body".to_string());
             Err(anyhow!("Failed to delete torrent: {} - {}", status, body))
         }
     }
@@ -224,10 +231,12 @@ impl QBittorrentClient {
 
         let url = self.base_url.join("/api/v2/torrents/add")?;
 
-        let form = reqwest::multipart::Form::new()
-            .part("torrents", reqwest::multipart::Part::bytes(torrent_data.to_vec())
+        let form = reqwest::multipart::Form::new().part(
+            "torrents",
+            reqwest::multipart::Part::bytes(torrent_data.to_vec())
                 .file_name("torrent.torrent")
-                .mime_str("application/x-bittorrent")?);
+                .mime_str("application/x-bittorrent")?,
+        );
 
         let form = if let Some(path) = save_path {
             form.text("savepath", path.to_string())

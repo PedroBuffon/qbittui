@@ -1,8 +1,8 @@
 mod api;
 mod app;
 mod config;
-mod ui;
 mod event;
+mod ui;
 mod utils;
 
 use anyhow::Result;
@@ -10,12 +10,9 @@ use clap::Parser;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use url::Url;
 
@@ -71,7 +68,10 @@ async fn main() -> Result<()> {
             config.set_timezone(timezone)?;
             println!("Timezone set to: {}", timezone);
         } else {
-            eprintln!("Invalid timezone: {}. Use --list-timezones to see available options.", timezone);
+            eprintln!(
+                "Invalid timezone: {}. Use --list-timezones to see available options.",
+                timezone
+            );
             return Ok(());
         }
     }

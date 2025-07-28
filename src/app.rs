@@ -54,18 +54,29 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(base_url: Url, username: Option<String>, password: Option<String>) -> Result<Self> {
+    pub async fn new(
+        base_url: Url,
+        username: Option<String>,
+        password: Option<String>,
+    ) -> Result<Self> {
         let config = Config::load();
         Self::new_with_config(base_url, username, password, config).await
     }
 
-    pub async fn new_with_config(base_url: Url, username: Option<String>, password: Option<String>, config: Config) -> Result<Self> {
+    pub async fn new_with_config(
+        base_url: Url,
+        username: Option<String>,
+        password: Option<String>,
+        config: Config,
+    ) -> Result<Self> {
         let client = QBittorrentClient::new(base_url.clone());
 
         // Use saved config if no CLI args provided
         let (initial_url, initial_username) = if username.is_none() && password.is_none() {
             (
-                config.get_last_url().unwrap_or_else(|| base_url.to_string()),
+                config
+                    .get_last_url()
+                    .unwrap_or_else(|| base_url.to_string()),
                 config.get_last_username().unwrap_or_default(),
             )
         } else {
@@ -97,7 +108,7 @@ impl App {
             scroll_offset: 0,
             delete_confirmation_hash: None,
             max_visible_rows: 20,
-            terminal_width: 80,  // Default values
+            terminal_width: 80, // Default values
             terminal_height: 24,
             is_searching: false,
         };
@@ -135,7 +146,7 @@ impl App {
                     }
                 }
             }
-        }        // Auto-refresh torrents every 2 seconds when in main state
+        } // Auto-refresh torrents every 2 seconds when in main state
         if self.state == AppState::Main && self.last_update.elapsed() > Duration::from_secs(2) {
             self.refresh_data().await?;
         }
@@ -211,36 +222,34 @@ impl App {
             KeyCode::Esc => {
                 self.should_quit = true;
             }
-            KeyCode::Char('h') if key.modifiers.contains(crossterm::event::KeyModifiers::CONTROL) => {
+            KeyCode::Char('h')
+                if key
+                    .modifiers
+                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+            {
                 self.show_password = !self.show_password;
             }
-            _ => {
-                match self.input_mode {
-                    InputMode::Username => {
-                        match key.code {
-                            KeyCode::Char(c) => {
-                                self.username_input.push(c);
-                            }
-                            KeyCode::Backspace => {
-                                self.username_input.pop();
-                            }
-                            _ => {}
-                        }
+            _ => match self.input_mode {
+                InputMode::Username => match key.code {
+                    KeyCode::Char(c) => {
+                        self.username_input.push(c);
                     }
-                    InputMode::Password => {
-                        match key.code {
-                            KeyCode::Char(c) => {
-                                self.password_input.push(c);
-                            }
-                            KeyCode::Backspace => {
-                                self.password_input.pop();
-                            }
-                            _ => {}
-                        }
+                    KeyCode::Backspace => {
+                        self.username_input.pop();
                     }
                     _ => {}
-                }
-            }
+                },
+                InputMode::Password => match key.code {
+                    KeyCode::Char(c) => {
+                        self.password_input.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        self.password_input.pop();
+                    }
+                    _ => {}
+                },
+                _ => {}
+            },
         }
         Ok(())
     }
@@ -284,8 +293,8 @@ impl App {
             KeyCode::PageDown => {
                 let page_size = self.get_max_visible_rows().saturating_sub(1).max(1);
                 let max_len = self.get_current_torrent_list_len();
-                self.selected_torrent = (self.selected_torrent + page_size)
-                    .min(max_len.saturating_sub(1));
+                self.selected_torrent =
+                    (self.selected_torrent + page_size).min(max_len.saturating_sub(1));
                 self.adjust_scroll();
             }
             KeyCode::Home => {
@@ -300,15 +309,25 @@ impl App {
             KeyCode::Char(' ') => {
                 if let Some(torrent) = self.get_current_selected_torrent() {
                     let hash = torrent.hash.clone();
-                    log_debug(&format!("Torrent state: '{}', name: '{}'", torrent.state, torrent.name), &self.config.get_timezone());
+                    log_debug(
+                        &format!(
+                            "Torrent state: '{}', name: '{}'",
+                            torrent.state, torrent.name
+                        ),
+                        &self.config.get_timezone(),
+                    );
                     match torrent.state.as_str() {
                         "pausedDL" | "pausedUP" | "stoppedDL" | "stoppedUP" => {
                             log_debug("Attempting to resume torrent", &self.config.get_timezone());
-                            self.client.resume_torrent(&hash, &self.config.get_timezone()).await?;
+                            self.client
+                                .resume_torrent(&hash, &self.config.get_timezone())
+                                .await?;
                         }
                         _ => {
                             log_debug("Attempting to pause torrent", &self.config.get_timezone());
-                            self.client.pause_torrent(&hash, &self.config.get_timezone()).await?;
+                            self.client
+                                .pause_torrent(&hash, &self.config.get_timezone())
+                                .await?;
                         }
                     }
                     self.refresh_data().await?;
@@ -341,7 +360,8 @@ impl App {
                         Ok(data) => {
                             if let Err(e) = self.client.add_torrent(&data, None).await {
                                 self.error_message = Some(format!("Failed to add torrent: {}", e));
-                                self.state = AppState::Error(format!("Failed to add torrent: {}", e));
+                                self.state =
+                                    AppState::Error(format!("Failed to add torrent: {}", e));
                             } else {
                                 self.state = AppState::Main;
                                 self.input_mode = InputMode::None;
@@ -359,17 +379,15 @@ impl App {
                 self.state = AppState::Main;
                 self.input_mode = InputMode::None;
             }
-            _ => {
-                match key.code {
-                    KeyCode::Char(c) => {
-                        self.torrent_path_input.push(c);
-                    }
-                    KeyCode::Backspace => {
-                        self.torrent_path_input.pop();
-                    }
-                    _ => {}
+            _ => match key.code {
+                KeyCode::Char(c) => {
+                    self.torrent_path_input.push(c);
                 }
-            }
+                KeyCode::Backspace => {
+                    self.torrent_path_input.pop();
+                }
+                _ => {}
+            },
         }
         Ok(())
     }
@@ -432,10 +450,19 @@ impl App {
             Ok(()) => {
                 // Save successful connection info to config
                 let current_url = self.client.get_base_url().to_string();
-                if let Err(e) = self.config.update_connection_info(&current_url, &self.username_input) {
-                    log_debug(&format!("Failed to save config: {}", e), &self.config.get_timezone());
+                if let Err(e) = self
+                    .config
+                    .update_connection_info(&current_url, &self.username_input)
+                {
+                    log_debug(
+                        &format!("Failed to save config: {}", e),
+                        &self.config.get_timezone(),
+                    );
                 } else {
-                    log_debug("Successfully saved connection info to config", &self.config.get_timezone());
+                    log_debug(
+                        "Successfully saved connection info to config",
+                        &self.config.get_timezone(),
+                    );
                 }
 
                 self.state = AppState::Main;
@@ -532,11 +559,12 @@ impl App {
             self.is_searching = false;
         } else {
             let query = self.search_input.to_lowercase();
-            self.filtered_torrents = self.torrents
+            self.filtered_torrents = self
+                .torrents
                 .iter()
                 .filter(|torrent| {
-                    torrent.name.to_lowercase().contains(&query) ||
-                    torrent.state.to_lowercase().contains(&query)
+                    torrent.name.to_lowercase().contains(&query)
+                        || torrent.state.to_lowercase().contains(&query)
                 })
                 .cloned()
                 .collect();

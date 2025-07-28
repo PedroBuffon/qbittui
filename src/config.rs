@@ -26,15 +26,13 @@ impl Config {
     pub fn load() -> Self {
         if Path::new(Self::CONFIG_FILE).exists() {
             match fs::read_to_string(Self::CONFIG_FILE) {
-                Ok(content) => {
-                    match serde_json::from_str(&content) {
-                        Ok(config) => config,
-                        Err(e) => {
-                            eprintln!("Failed to parse config file: {}", e);
-                            Self::default()
-                        }
+                Ok(content) => match serde_json::from_str(&content) {
+                    Ok(config) => config,
+                    Err(e) => {
+                        eprintln!("Failed to parse config file: {}", e);
+                        Self::default()
                     }
-                }
+                },
                 Err(e) => {
                     eprintln!("Failed to read config file: {}", e);
                     Self::default()

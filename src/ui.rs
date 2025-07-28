@@ -1,13 +1,11 @@
 use crate::app::{App, AppState, InputMode};
-use humansize::{format_size, BINARY};
+use humansize::{BINARY, format_size};
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Direction, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{
-        Block, Borders, Clear, List, ListItem, Paragraph, Wrap,
-    },
-    Frame,
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
 
 pub fn draw(f: &mut Frame, app: &mut App) {
@@ -33,16 +31,19 @@ pub fn draw(f: &mut Frame, app: &mut App) {
         ])
         .style(Style::default().fg(Color::Red))
         .alignment(Alignment::Center)
-        .block(Block::default()
-            .title("Terminal Size Warning")
-            .borders(Borders::ALL)
-            .style(Style::default().fg(Color::Red)));
+        .block(
+            Block::default()
+                .title("Terminal Size Warning")
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::Red)),
+        );
 
         let warning_area = centered_rect_percent(50, 12, size);
         f.render_widget(Clear, warning_area);
         f.render_widget(warning, warning_area);
         return;
-    }    match app.state {
+    }
+    match app.state {
         AppState::UrlConfig => draw_url_config(f, app),
         AppState::Login => draw_login(f, app),
         AppState::Main => draw_main(f, app),
@@ -67,7 +68,11 @@ fn draw_url_config(f: &mut Frame, app: &App) {
 
     let block = Block::default()
         .title(" qBittorrent WebUI Configuration ")
-        .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
 
@@ -102,27 +107,29 @@ fn draw_url_config(f: &mut Frame, app: &App) {
     // URL input field
     let url_block = Block::default()
         .title(" WebUI URL (Active) ")
-        .title_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        )
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Yellow));
 
     // Make sure the text is visible with good contrast
     let url_display = if app.url_input.is_empty() {
         // Show placeholder in gray
-        Paragraph::new("http://localhost:8080")
-            .block(url_block.clone())
+        Paragraph::new("http://localhost:8080").block(url_block.clone())
     } else {
         // Show actual input in white
-        Paragraph::new(app.url_input.clone())
-            .block(url_block.clone())
+        Paragraph::new(app.url_input.clone()).block(url_block.clone())
     };
 
     f.render_widget(url_display, chunks[1]);
 
-        // Instructions
-    let instructions = Paragraph::new(vec![
-        Line::from("Enter: Continue to login | Esc: Quit | Ctrl+Q: Force quit"),
-    ])
+    // Instructions
+    let instructions = Paragraph::new(vec![Line::from(
+        "Enter: Continue to login | Esc: Quit | Ctrl+Q: Force quit",
+    )])
     .style(Style::default().fg(Color::Gray))
     .alignment(Alignment::Center)
     .wrap(Wrap { trim: true });
@@ -152,7 +159,11 @@ fn draw_login(f: &mut Frame, app: &App) {
 
     let block = Block::default()
         .title(" qBittorrent Login ")
-        .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )
         // Outside border
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan));
@@ -174,8 +185,9 @@ fn draw_login(f: &mut Frame, app: &App) {
         .split(inner);
 
     // Username field
-    let username_title = if app.config.get_last_username().is_some() &&
-                            app.config.get_last_username().as_ref() == Some(&app.username_input) {
+    let username_title = if app.config.get_last_username().is_some()
+        && app.config.get_last_username().as_ref() == Some(&app.username_input)
+    {
         "Username (Last used)"
     } else {
         "Username"
@@ -187,8 +199,7 @@ fn draw_login(f: &mut Frame, app: &App) {
         .border_style(Style::default().fg(Color::Yellow));
 
     let username_text = format!("{} ", app.username_input); // Add space for cursor
-    let username_paragraph = Paragraph::new(username_text)
-        .block(username_block);
+    let username_paragraph = Paragraph::new(username_text).block(username_block);
     f.render_widget(username_paragraph, chunks[0]);
 
     // Password field
@@ -203,13 +214,12 @@ fn draw_login(f: &mut Frame, app: &App) {
         format!("{} ", "●".repeat(app.password_input.len()))
     };
 
-    let password_paragraph = Paragraph::new(password_display)
-        .block(password_block);
+    let password_paragraph = Paragraph::new(password_display).block(password_block);
     f.render_widget(password_paragraph, chunks[1]);
 
     // Instructions
     let instructions = Paragraph::new(
-        "Tab: Switch | Enter: Login | Esc: Quit | Ctrl+H: Show/Hide | Ctrl+Q: Force quit"
+        "Tab: Switch | Enter: Login | Esc: Quit | Ctrl+H: Show/Hide | Ctrl+Q: Force quit",
     )
     .style(Style::default().fg(Color::Gray))
     .alignment(Alignment::Center)
@@ -265,21 +275,19 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
     f.render_widget(block, area);
 
     if let Some(state) = &app.server_state {
-        let info_text = vec![
-            Line::from(vec![
-                Span::styled("Status: ", Style::default().fg(Color::Cyan)),
-                Span::raw(&state.connection_status),
-                Span::raw("  |  "),
-                Span::styled("Down: ", Style::default().fg(Color::Green)),
-                Span::raw(format_size(state.dl_info_speed as u64, BINARY) + "/s"),
-                Span::raw("  |  "),
-                Span::styled("Up: ", Style::default().fg(Color::Red)),
-                Span::raw(format_size(state.up_info_speed as u64, BINARY) + "/s"),
-                Span::raw("  |  "),
-                Span::styled("Torrents: ", Style::default().fg(Color::Yellow)),
-                Span::raw(app.torrents.len().to_string()),
-            ]),
-        ];
+        let info_text = vec![Line::from(vec![
+            Span::styled("Status: ", Style::default().fg(Color::Cyan)),
+            Span::raw(&state.connection_status),
+            Span::raw("  |  "),
+            Span::styled("Down: ", Style::default().fg(Color::Green)),
+            Span::raw(format_size(state.dl_info_speed as u64, BINARY) + "/s"),
+            Span::raw("  |  "),
+            Span::styled("Up: ", Style::default().fg(Color::Red)),
+            Span::raw(format_size(state.up_info_speed as u64, BINARY) + "/s"),
+            Span::raw("  |  "),
+            Span::styled("Torrents: ", Style::default().fg(Color::Yellow)),
+            Span::raw(app.torrents.len().to_string()),
+        ])];
 
         let paragraph = Paragraph::new(info_text).alignment(Alignment::Center);
         f.render_widget(paragraph, inner);
@@ -288,7 +296,8 @@ fn draw_header(f: &mut Frame, area: Rect, app: &App) {
 
 fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
     let scroll_info = if app.torrents.len() > app.get_max_visible_rows() {
-        format!(" [{}-{}/{}]",
+        format!(
+            " [{}-{}/{}]",
             app.scroll_offset + 1,
             (app.scroll_offset + app.get_max_visible_rows()).min(app.torrents.len()),
             app.torrents.len()
@@ -339,18 +348,23 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
 
     // Draw header
     let header_text = vec![
-        Line::from(vec![
-            Span::styled(
-                format!("{:<width$} {:>8} {:>12} {:>12} {:>12} {:<15} {:>8}",
-                    "Name", "Progress", "Size", "Down Speed", "Up Speed", "State", "ETA",
-                    width = name_width
-                ),
-                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        Line::from(vec![Span::styled(
+            format!(
+                "{:<width$} {:>8} {:>12} {:>12} {:>12} {:<15} {:>8}",
+                "Name",
+                "Progress",
+                "Size",
+                "Down Speed",
+                "Up Speed",
+                "State",
+                "ETA",
+                width = name_width
             ),
-        ]),
-        Line::from(vec![
-            Span::raw("─".repeat(inner.width as usize)),
-        ]),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(vec![Span::raw("─".repeat(inner.width as usize))]),
     ];
 
     let header_paragraph = Paragraph::new(header_text);
@@ -376,7 +390,8 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
             };
 
             // Calculate available width for name (total width - other columns - spacing)
-            let available_width = inner.width.saturating_sub(8 + 12 + 12 + 12 + 15 + 8 + 7) as usize; // Progress + Size + Down + Up + State + ETA + spacing
+            let available_width =
+                inner.width.saturating_sub(8 + 12 + 12 + 12 + 15 + 8 + 7) as usize; // Progress + Size + Down + Up + State + ETA + spacing
             let name_width = available_width.max(20); // Minimum 20 chars for name
 
             let name = if torrent.name.len() > name_width {
@@ -397,7 +412,10 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
             let line = Line::from(vec![
                 Span::raw(format!("{:<width$}", name, width = name_width)),
                 Span::raw(" "),
-                Span::styled(format!("{:>7}%", progress), Style::default().fg(Color::Green)),
+                Span::styled(
+                    format!("{:>7}%", progress),
+                    Style::default().fg(Color::Green),
+                ),
                 Span::raw(" "),
                 Span::raw(format!("{:>11}", size_str)),
                 Span::raw(" "),
@@ -405,10 +423,14 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
                 Span::raw(" "),
                 Span::raw(format!("{:>11}", ul_speed_str)),
                 Span::raw(" "),
-                Span::styled(format!("{:<14}", torrent.state), Style::default().fg(state_color)),
+                Span::styled(
+                    format!("{:<14}", torrent.state),
+                    Style::default().fg(state_color),
+                ),
                 Span::raw(" "),
                 Span::styled(
-                    format!("{:>7}",
+                    format!(
+                        "{:>7}",
                         match torrent.state.as_str() {
                             "downloading" | "stalledDL" | "queuedDL" => {
                                 torrent.eta.map_or("∞".to_string(), |e| {
@@ -453,9 +475,7 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
 }
 
 fn draw_footer(f: &mut Frame, area: Rect) {
-    let block = Block::default()
-        .title("Controls")
-        .borders(Borders::ALL);
+    let block = Block::default().title("Controls").borders(Borders::ALL);
 
     let controls = Paragraph::new(
         "Ctrl+Q: Quit | r: Refresh | ↑↓/jk: Navigate | PgUp/PgDn: Page | Home/End: First/Last | Space: Pause/Resume | d/Del: Delete | a: Add | Ctrl+F: Search"
@@ -487,10 +507,7 @@ fn draw_add_torrent(f: &mut Frame, app: &App) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(3),
-            Constraint::Length(2),
-        ])
+        .constraints([Constraint::Length(3), Constraint::Length(2)])
         .split(inner);
 
     let input_block = Block::default()
@@ -498,8 +515,7 @@ fn draw_add_torrent(f: &mut Frame, app: &App) {
         .borders(Borders::ALL)
         .style(Style::default().fg(Color::Yellow));
 
-    let input_paragraph = Paragraph::new(app.torrent_path_input.as_str())
-        .block(input_block);
+    let input_paragraph = Paragraph::new(app.torrent_path_input.as_str()).block(input_block);
     f.render_widget(input_paragraph, chunks[0]);
 
     let instructions = Paragraph::new("Enter: Add torrent | Esc: Cancel")
@@ -533,10 +549,7 @@ fn draw_confirm_delete(f: &mut Frame, _app: &App) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(2),
-            Constraint::Length(2),
-        ])
+        .constraints([Constraint::Length(2), Constraint::Length(2)])
         .split(inner);
 
     let question = Paragraph::new("Are you sure you want to delete this torrent?")
@@ -571,10 +584,7 @@ fn draw_error(f: &mut Frame, message: &str) {
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Min(0),
-            Constraint::Length(2),
-        ])
+        .constraints([Constraint::Min(0), Constraint::Length(2)])
         .split(inner);
 
     let error_text = Paragraph::new(message)
@@ -659,10 +669,12 @@ fn draw_search(f: &mut Frame, app: &mut App) {
 
     let search_input = Paragraph::new(app.search_input.as_str())
         .style(Style::default().fg(Color::White).bg(Color::Blue))
-        .block(Block::default()
-            .borders(Borders::ALL)
-            .title(search_title)
-            .style(Style::default().fg(Color::Yellow)));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(search_title)
+                .style(Style::default().fg(Color::Yellow)),
+        );
 
     f.render_widget(search_input, popup_area);
 
