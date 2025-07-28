@@ -1,0 +1,22 @@
+[package]
+name = "qbittui"
+version = "1.0.0"
+edition = "2024"
+description = "A Terminal User Interface wrapper for qBittorrent WebUI"
+authors = ["Pedro Buffon <henriquebuffon@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/PedroBuffon/qbittui"
+
+[dependencies]
+tokio = { version = "1.0", features = ["full"] }
+reqwest = { version = "0.11", features = ["json", "cookies", "multipart"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+ratatui = "0.29"
+crossterm = "0.28"
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+url = "2.4"
+unicode-width = "0.2"
+chrono = { version = "0.4", features = ["serde"] }
+humansize = "2.1"
