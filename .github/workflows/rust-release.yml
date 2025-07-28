@@ -1,0 +1,272 @@
+# qBittUI - Terminal User Interface for qBittorrent
+# This workflow builds and releases the qBittUI Rust application
+# Cross-platform terminal application for managing qBittorrent via WebUI
+
+name: qBittUI Release
+
+env:
+  RELEASE_VERSION: "v1.0.0"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "📄 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "🦀 Setup Rust"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          components: rustfmt, clippy
+
+      - name: "📋 Check formatting"
+        run: cargo fmt -- --check
+
+      - name: "🔍 Clippy lints"
+        run: cargo clippy -- -D warnings
+
+      - name: "🧪 Run tests"
+        run: cargo test
+
+      - name: "🔧 Check compilation"
+        run: cargo check
+
+  build:
+    name: Build
+    needs: test
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-gnu
+          - x86_64-pc-windows-gnu
+          - x86_64-apple-darwin
+          - aarch64-unknown-linux-gnu
+          - aarch64-apple-darwin
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_name: qbittui
+            asset_name: qbittui-linux-x86_64
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-latest
+            artifact_name: qbittui.exe
+            asset_name: qbittui-windows-x86_64.exe
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            artifact_name: qbittui
+            asset_name: qbittui-macos-x86_64
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact_name: qbittui
+            asset_name: qbittui-linux-aarch64
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            artifact_name: qbittui
+            asset_name: qbittui-macos-aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: "📄 Checkout"
+        uses: actions/checkout@v4
+
+      - name: "🦀 Setup Rust"
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: ${{ matrix.target }}
+
+      - name: "🔧 Install cross (Linux targets on Ubuntu)"
+        if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-unknown-linux-gnu'
+        run: cargo install cross
+
+      - name: "🔨 Build (Linux x86_64)"
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: "🔨 Build (Cross compilation)"
+        if: matrix.os == 'ubuntu-latest' && matrix.target != 'x86_64-unknown-linux-gnu'
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: "🔨 Build (macOS)"
+        if: matrix.os == 'macos-latest'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: "📦 Prepare artifact"
+        run: |
+          mkdir -p artifacts
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} artifacts/${{ matrix.asset_name }}
+          cp README.md artifacts/
+          cp LICENSE artifacts/ || echo "LICENSE file not found"
+
+      - name: "📤 Upload artifact"
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.asset_name }}
+          path: artifacts/
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: "📄 Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "🔍 Fetch all tags"
+        run: git fetch --tags
+
+      - name: "🔍 Debug Info"
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref Name: ${{ github.ref_name }}"
+          echo "Release Version: ${{ env.RELEASE_VERSION }}"
+
+      - name: "🔍 Check if tag exists"
+        id: check_tag
+        run: |
+          if git tag -l "${{ env.RELEASE_VERSION }}" | grep -q "${{ env.RELEASE_VERSION }}"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} already exists locally"
+          elif git ls-remote --tags origin "${{ env.RELEASE_VERSION }}" | grep -q "${{ env.RELEASE_VERSION }}"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} already exists on remote"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} does not exist"
+          fi
+
+      - name: "🏷️ Create and Push Tag"
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git tag -a "${{ env.RELEASE_VERSION }}" -m "Release ${{ env.RELEASE_VERSION }}"
+          git push origin "${{ env.RELEASE_VERSION }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "📥 Download all artifacts"
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: actions/download-artifact@v3
+
+      - name: "📦 Prepare release assets"
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        run: |
+          mkdir -p release-assets
+
+          # Create compressed archives for each platform
+          for artifact in qbittui-*; do
+            if [ -d "$artifact" ]; then
+              cd "$artifact"
+              if [[ "$artifact" == *"windows"* ]]; then
+                zip -r "../release-assets/${artifact}.zip" .
+              else
+                tar -czf "../release-assets/${artifact}.tar.gz" .
+              fi
+              cd ..
+            fi
+          done
+
+          # List what we have
+          ls -la release-assets/
+
+      - name: "🚀 Create Release"
+        if: steps.check_tag.outputs.tag_exists == 'false'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ env.RELEASE_VERSION }}
+          name: "qBittUI ${{ env.RELEASE_VERSION }}"
+          body: |
+            # 🌟 qBittUI - Terminal User Interface for qBittorrent
+
+            A modern, fast, and feature-rich terminal user interface for managing qBittorrent via WebUI.
+
+            ## ✨ Features
+            - 🖥️ **Clean terminal interface** - Works in any terminal
+            - 🔗 **qBittorrent WebUI integration** - Connects to existing qBittorrent installations
+            - 📊 **Real-time monitoring** - Live updates of download/upload speeds and progress
+            - 🔍 **Search functionality** - Quickly find torrents with Ctrl+F
+            - ⏸️ **Torrent management** - Pause, resume, and delete torrents
+            - 📁 **Add torrents** - Support for adding new torrents
+            - 💾 **Configuration persistence** - Saves connection settings automatically
+            - 🎨 **Color-coded states** - Visual indicators for different torrent states
+            - 📐 **Responsive design** - Adapts to different terminal sizes
+            - 🕒 **Timezone support** - Configure timezone for logs
+
+            ## 📦 Available Packages
+
+            ### Linux
+            - **qbittui-linux-x86_64.tar.gz** - For 64-bit Linux systems (Intel/AMD)
+            - **qbittui-linux-aarch64.tar.gz** - For ARM64 Linux systems (Raspberry Pi 4+, etc.)
+
+            ### Windows
+            - **qbittui-windows-x86_64.exe.zip** - For 64-bit Windows systems
+
+            ### macOS
+            - **qbittui-macos-x86_64.tar.gz** - For Intel Mac systems
+            - **qbittui-macos-aarch64.tar.gz** - For Apple Silicon Mac systems (M1/M2/M3)
+
+            ## 🚀 Quick Start
+
+            1. **Download** the appropriate package for your system
+            2. **Extract** the archive (Linux/macOS) or ZIP file (Windows)
+            3. **Make executable** (Linux/macOS): `chmod +x qbittui`
+            4. **Run**: `./qbittui` or `qbittui.exe`
+            5. **Configure** your qBittorrent WebUI URL and credentials
+
+            ## ⚙️ Configuration
+
+            On first run, you'll be prompted to configure:
+            - **WebUI URL** (e.g., `http://localhost:8080`)
+            - **Username and Password** for qBittorrent WebUI
+
+            ### Timezone Configuration
+            Set your preferred timezone for log timestamps:
+            ```bash
+            qbittui --timezone America/New_York
+            qbittui --list-timezones  # See available timezones
+            ```
+
+            ## 📋 System Requirements
+
+            - **qBittorrent** with WebUI enabled
+            - **Terminal** with Unicode support (recommended)
+            - **Network access** to qBittorrent WebUI
+
+            ## 🆘 Support
+
+            - 📖 Check the [README.md](https://github.com/PedroBuffon/qbittui/blob/main/README.md) for detailed documentation
+            - 🐛 Report issues on [GitHub Issues](https://github.com/PedroBuffon/qbittui/issues)
+            - 💡 Feature requests welcome!
+
+            ---
+
+            **Made with ❤️ in Rust** 🦀
+          files: |
+            release-assets/*
+          draft: false
+          prerelease: false
