@@ -61,8 +61,8 @@ fn draw_url_config(f: &mut Frame, app: &App) {
     f.render_widget(Clear, size);
 
     // Create a responsive centered configuration form
-    let popup_width = (size.width * 80 / 100).min(80).max(50); // 80% of width, but between 50-80 chars
-    let popup_height = (size.height * 40 / 100).min(12).max(8); // 40% of height, but between 8-12 lines
+    let popup_width = (size.width * 80 / 100).clamp(50, 80); // 80% of width, but between 50-80 chars
+    let popup_height = (size.height * 40 / 100).clamp(8, 12); // 40% of height, but between 8-12 lines
 
     let popup_area = centered_rect(popup_width, popup_height, size);
 
@@ -94,7 +94,7 @@ fn draw_url_config(f: &mut Frame, app: &App) {
 
     // Description
     let description_text = if let Some(last_url) = app.config.get_last_url() {
-        format!("Enter qBittorrent WebUI URL (Last used: {})", last_url)
+        format!("Enter qBittorrent WebUI URL (Last used: {last_url})")
     } else {
         "Enter the qBittorrent WebUI URL:".to_string()
     };
@@ -152,8 +152,8 @@ fn draw_login(f: &mut Frame, app: &App) {
     f.render_widget(Clear, size);
 
     // Create a responsive centered login form
-    let popup_width = (size.width * 70 / 100).min(70).max(40); // 70% of width, but between 40-70 chars
-    let popup_height = (size.height * 50 / 100).min(12).max(9); // 50% of height, but between 9-12 lines
+    let popup_width = (size.width * 70 / 100).clamp(40, 70); // 70% of width, but between 40-70 chars
+    let popup_height = (size.height * 50 / 100).clamp(9, 12); // 50% of height, but between 9-12 lines
 
     let popup_area = centered_rect(popup_width, popup_height, size);
 
@@ -374,8 +374,7 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
     let visible_torrents = app.get_visible_torrents();
     let items: Vec<ListItem> = visible_torrents
         .iter()
-        .enumerate()
-        .map(|(_i, torrent)| {
+        .map(|torrent| {
             let progress = (torrent.progress * 100.0) as u8;
             let size_str = format_size(torrent.size as u64, BINARY);
             let dl_speed_str = if torrent.dlspeed > 0 {
@@ -410,18 +409,15 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
             };
 
             let line = Line::from(vec![
-                Span::raw(format!("{:<width$}", name, width = name_width)),
+                Span::raw(format!("{name:<name_width$}")),
                 Span::raw(" "),
-                Span::styled(
-                    format!("{:>7}%", progress),
-                    Style::default().fg(Color::Green),
-                ),
+                Span::styled(format!("{progress:>7}%"), Style::default().fg(Color::Green)),
                 Span::raw(" "),
-                Span::raw(format!("{:>11}", size_str)),
+                Span::raw(format!("{size_str:>11}")),
                 Span::raw(" "),
-                Span::raw(format!("{:>11}", dl_speed_str)),
+                Span::raw(format!("{dl_speed_str:>11}")),
                 Span::raw(" "),
-                Span::raw(format!("{:>11}", ul_speed_str)),
+                Span::raw(format!("{ul_speed_str:>11}")),
                 Span::raw(" "),
                 Span::styled(
                     format!("{:<14}", torrent.state),
@@ -439,7 +435,7 @@ fn draw_torrent_list(f: &mut Frame, area: Rect, app: &mut App) {
                                     } else if e == 0 {
                                         "0s".to_string()
                                     } else if e < 60 {
-                                        format!("{}s", e)
+                                        format!("{e}s")
                                     } else if e < 3600 {
                                         format!("{}m", e / 60)
                                     } else if e < 86400 {

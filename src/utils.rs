@@ -59,6 +59,6 @@ pub fn log_debug(message: &str, timezone: &str) {
         .open("qbittui_debug.log")
     {
         let timestamp = format_timestamp_with_timezone(timezone);
-        let _ = writeln!(file, "[{}] {}", timestamp, message);
+        let _ = writeln!(file, "[{timestamp}] {message}");
     }
 }

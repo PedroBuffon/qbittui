@@ -5,7 +5,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use url::Url;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct Torrent {
     pub hash: String,
     pub name: String,
@@ -39,6 +41,7 @@ pub struct Torrent {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct ServerState {
     pub connection_status: String,
     #[serde(default)]
@@ -60,9 +63,11 @@ pub struct ServerState {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct Category {
     pub name: String,
-    pub savePath: String,
+    #[serde(rename = "savePath")]
+    pub save_path: String,
 }
 
 pub struct QBittorrentClient {
@@ -135,6 +140,7 @@ impl QBittorrentClient {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn get_categories(&self) -> Result<HashMap<String, Category>> {
         self.ensure_authenticated().await?;
 
@@ -156,8 +162,8 @@ impl QBittorrentClient {
         let mut params = HashMap::new();
         params.insert("hashes", hash);
 
-        log_debug(&format!("Pausing torrent with hash: {}", hash), timezone);
-        log_debug(&format!("Request URL: {}", url), timezone);
+        log_debug(&format!("Pausing torrent with hash: {hash}"), timezone);
+        log_debug(&format!("Request URL: {url}"), timezone);
 
         let response = self.client.post(url).form(&params).send().await?;
 
@@ -168,7 +174,7 @@ impl QBittorrentClient {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             log_debug(
-                &format!("Pause failed - Status: {}, Body: {}", status, body),
+                &format!("Pause failed - Status: {status}, Body: {body}"),
                 timezone,
             );
             Err(anyhow!("Failed to pause torrent: {}", status))
@@ -182,8 +188,8 @@ impl QBittorrentClient {
         let mut params = HashMap::new();
         params.insert("hashes", hash);
 
-        log_debug(&format!("Resuming torrent with hash: {}", hash), timezone);
-        log_debug(&format!("Request URL: {}", url), timezone);
+        log_debug(&format!("Resuming torrent with hash: {hash}"), timezone);
+        log_debug(&format!("Request URL: {url}"), timezone);
 
         let response = self.client.post(url).form(&params).send().await?;
 
@@ -197,7 +203,7 @@ impl QBittorrentClient {
                 .await
                 .unwrap_or_else(|_| "Unable to read response body".to_string());
             log_debug(
-                &format!("Resume failed - Status: {}, Body: {}", status, body),
+                &format!("Resume failed - Status: {status}, Body: {body}"),
                 timezone,
             );
             Err(anyhow!("Failed to resume torrent: {} - {}", status, body))
@@ -269,6 +275,7 @@ impl QBittorrentClient {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn check_authentication(&self) -> Result<bool> {
         let url = self.base_url.join("/api/v2/app/version")?;
         let response = self.client.get(url).send().await?;

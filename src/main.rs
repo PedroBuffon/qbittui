@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
     if args.list_timezones {
         println!("Available timezones:");
         for tz in utils::get_common_timezones() {
-            println!("  {}", tz);
+            println!("  {tz}");
         }
         println!("\nYou can use any valid timezone from the IANA Time Zone Database.");
         println!("Example: qbittui --timezone US/Eastern");
@@ -66,11 +66,10 @@ async fn main() -> Result<()> {
     if let Some(timezone) = &args.timezone {
         if utils::is_valid_timezone(timezone) {
             config.set_timezone(timezone)?;
-            println!("Timezone set to: {}", timezone);
+            println!("Timezone set to: {timezone}");
         } else {
             eprintln!(
-                "Invalid timezone: {}. Use --list-timezones to see available options.",
-                timezone
+                "Invalid timezone: {timezone}. Use --list-timezones to see available options."
             );
             return Ok(());
         }

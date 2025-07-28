@@ -29,12 +29,12 @@ impl Config {
                 Ok(content) => match serde_json::from_str(&content) {
                     Ok(config) => config,
                     Err(e) => {
-                        eprintln!("Failed to parse config file: {}", e);
+                        eprintln!("Failed to parse config file: {e}");
                         Self::default()
                     }
                 },
                 Err(e) => {
-                    eprintln!("Failed to read config file: {}", e);
+                    eprintln!("Failed to read config file: {e}");
                     Self::default()
                 }
             }

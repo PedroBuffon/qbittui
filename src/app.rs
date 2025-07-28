@@ -54,6 +54,7 @@ pub struct App {
 }
 
 impl App {
+    #[allow(dead_code)]
     pub async fn new(
         base_url: Url,
         username: Option<String>,
@@ -359,9 +360,8 @@ impl App {
                     match std::fs::read(path) {
                         Ok(data) => {
                             if let Err(e) = self.client.add_torrent(&data, None).await {
-                                self.error_message = Some(format!("Failed to add torrent: {}", e));
-                                self.state =
-                                    AppState::Error(format!("Failed to add torrent: {}", e));
+                                self.error_message = Some(format!("Failed to add torrent: {e}"));
+                                self.state = AppState::Error(format!("Failed to add torrent: {e}"));
                             } else {
                                 self.state = AppState::Main;
                                 self.input_mode = InputMode::None;
@@ -369,8 +369,8 @@ impl App {
                             }
                         }
                         Err(e) => {
-                            self.error_message = Some(format!("Failed to read file: {}", e));
-                            self.state = AppState::Error(format!("Failed to read file: {}", e));
+                            self.error_message = Some(format!("Failed to read file: {e}"));
+                            self.state = AppState::Error(format!("Failed to read file: {e}"));
                         }
                     }
                 }
@@ -423,8 +423,8 @@ impl App {
                 if let Some(hash) = &self.delete_confirmation_hash {
                     let delete_files = key.modifiers.contains(KeyModifiers::SHIFT);
                     if let Err(e) = self.client.delete_torrent(hash, delete_files).await {
-                        self.error_message = Some(format!("Failed to delete torrent: {}", e));
-                        self.state = AppState::Error(format!("Failed to delete torrent: {}", e));
+                        self.error_message = Some(format!("Failed to delete torrent: {e}"));
+                        self.state = AppState::Error(format!("Failed to delete torrent: {e}"));
                     } else {
                         self.state = AppState::Main;
                         self.delete_confirmation_hash = None;
@@ -455,7 +455,7 @@ impl App {
                     .update_connection_info(&current_url, &self.username_input)
                 {
                     log_debug(
-                        &format!("Failed to save config: {}", e),
+                        &format!("Failed to save config: {e}"),
                         &self.config.get_timezone(),
                     );
                 } else {
@@ -470,8 +470,8 @@ impl App {
                 self.refresh_data().await?;
             }
             Err(e) => {
-                self.error_message = Some(format!("Login failed: {}", e));
-                self.state = AppState::Error(format!("Login failed: {}", e));
+                self.error_message = Some(format!("Login failed: {e}"));
+                self.state = AppState::Error(format!("Login failed: {e}"));
             }
         }
         Ok(())
@@ -486,7 +486,7 @@ impl App {
                 }
             }
             Err(e) => {
-                self.error_message = Some(format!("Failed to fetch torrents: {}", e));
+                self.error_message = Some(format!("Failed to fetch torrents: {e}"));
             }
         }
 
@@ -496,7 +496,7 @@ impl App {
             }
             Err(e) => {
                 // Don't show error for server state as it's not critical
-                eprintln!("Failed to fetch server state: {}", e);
+                eprintln!("Failed to fetch server state: {e}");
             }
         }
 
