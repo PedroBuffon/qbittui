@@ -51,8 +51,6 @@ jobs:
           - x86_64-unknown-linux-gnu
           - x86_64-pc-windows-gnu
           - x86_64-apple-darwin
-          - aarch64-unknown-linux-gnu
-          - aarch64-apple-darwin
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
@@ -66,14 +64,6 @@ jobs:
             os: macos-latest
             artifact_name: qbittui
             asset_name: qbittui-macos-x86_64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            artifact_name: qbittui
-            asset_name: qbittui-linux-aarch64
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            artifact_name: qbittui
-            asset_name: qbittui-macos-aarch64
 
     runs-on: ${{ matrix.os }}
 
