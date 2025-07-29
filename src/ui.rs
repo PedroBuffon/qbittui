@@ -474,7 +474,7 @@ fn draw_footer(f: &mut Frame, area: Rect) {
     let block = Block::default().title("Controls").borders(Borders::ALL);
 
     let controls = Paragraph::new(
-        "Ctrl+Q: Quit | r: Refresh | ↑↓/jk: Navigate | PgUp/PgDn: Page | Home/End: First/Last | Space: Pause/Resume | d/Del: Delete | a: Add | Ctrl+F: Search"
+        "Ctrl+Q: Quit | r: Refresh | ↑↓: Navigate | PgUp/PgDn: Page | Home/End: First/Last | Space: Pause/Resume | Del: Delete | Ctrl+A: Add | Ctrl+F: Search"
     )
     .block(block)
     .style(Style::default().fg(Color::Gray))

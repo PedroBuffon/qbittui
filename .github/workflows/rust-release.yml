@@ -5,7 +5,7 @@
 name: qBittUI Release
 
 env:
-  RELEASE_VERSION: "v1.0.0"
+  RELEASE_VERSION: "v1.0.2"
 
 on:
   push:
@@ -183,36 +183,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ env.RELEASE_VERSION }}
-          name: "qBittUI ${{ env.RELEASE_VERSION }}"
+          name: "${{ env.RELEASE_VERSION }}"
           body: |
-            # 🌟 qBittUI - Terminal User Interface for qBittorrent
 
-            A modern, fast, and feature-rich terminal user interface for managing qBittorrent via WebUI.
-
-            ## ✨ Features
-            - 🖥️ **Clean terminal interface** - Works in any terminal
-            - 🔗 **qBittorrent WebUI integration** - Connects to existing qBittorrent installations
-            - 📊 **Real-time monitoring** - Live updates of download/upload speeds and progress
-            - 🔍 **Search functionality** - Quickly find torrents with Ctrl+F
-            - ⏸️ **Torrent management** - Pause, resume, and delete torrents
-            - 📁 **Add torrents** - Support for adding new torrents
-            - 💾 **Configuration persistence** - Saves connection settings automatically
-            - 🎨 **Color-coded states** - Visual indicators for different torrent states
-            - 📐 **Responsive design** - Adapts to different terminal sizes
-            - 🕒 **Timezone support** - Configure timezone for logs
-
-            ## 📦 Available Packages
-
-            ### Linux
-            - **qbittui-linux-x86_64.tar.gz** - For 64-bit Linux systems (Intel/AMD)
-            - **qbittui-linux-aarch64.tar.gz** - For ARM64 Linux systems (Raspberry Pi 4+, etc.)
-
-            ### Windows
-            - **qbittui-windows-x86_64.exe.zip** - For 64-bit Windows systems
-
-            ### macOS
-            - **qbittui-macos-x86_64.tar.gz** - For Intel Mac systems
-            - **qbittui-macos-aarch64.tar.gz** - For Apple Silicon Mac systems (M1/M2/M3)
+            ## Fixes
+            - Fixed key issues on windows where presses and releases were being detected as a press
 
             ## 🚀 Quick Start
 
@@ -227,13 +202,6 @@ jobs:
             On first run, you'll be prompted to configure:
             - **WebUI URL** (e.g., `http://localhost:8080`)
             - **Username and Password** for qBittorrent WebUI
-
-            ### Timezone Configuration
-            Set your preferred timezone for log timestamps:
-            ```bash
-            qbittui --timezone America/New_York
-            qbittui --list-timezones  # See available timezones
-            ```
 
             ## 📋 System Requirements
 

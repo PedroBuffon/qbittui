@@ -2,7 +2,7 @@ use crate::api::{QBittorrentClient, ServerState, Torrent};
 use crate::config::Config;
 use crate::utils::log_debug;
 use anyhow::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::time::{Duration, Instant};
 use url::Url;
 
@@ -127,6 +127,11 @@ impl App {
 
     pub async fn handle_event(&mut self, event: crossterm::event::Event) -> Result<bool> {
         if let crossterm::event::Event::Key(key) = event {
+            // Only handle key press events, ignore key release events
+            if key.kind != KeyEventKind::Press {
+                return Ok(false);
+            }
+
             // Handle global Ctrl+Q quit - only with Ctrl modifier
             if key.code == KeyCode::Char('q') && key.modifiers.contains(KeyModifiers::CONTROL) {
                 self.should_quit = true;
@@ -268,18 +273,18 @@ impl App {
                 self.filter_torrents();
             }
             KeyCode::Char('r') => self.refresh_data().await?,
-            KeyCode::Char('a') => {
+            KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 self.state = AppState::AddTorrent;
                 self.input_mode = InputMode::TorrentPath;
                 self.torrent_path_input = String::new();
             }
-            KeyCode::Up | KeyCode::Char('k') => {
+            KeyCode::Up => {
                 if self.selected_torrent > 0 {
                     self.selected_torrent -= 1;
                     self.adjust_scroll();
                 }
             }
-            KeyCode::Down | KeyCode::Char('j') => {
+            KeyCode::Down => {
                 let max_len = self.get_current_torrent_list_len();
                 if self.selected_torrent < max_len.saturating_sub(1) {
                     self.selected_torrent += 1;
@@ -334,7 +339,7 @@ impl App {
                     self.refresh_data().await?;
                 }
             }
-            KeyCode::Delete | KeyCode::Char('d') => {
+            KeyCode::Delete => {
                 if let Some(torrent) = self.get_current_selected_torrent() {
                     self.delete_confirmation_hash = Some(torrent.hash.clone());
                     self.state = AppState::ConfirmDelete;

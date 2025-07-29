@@ -80,15 +80,15 @@ qbittui --list-timezones
 
 #### Navigation
 
-- `↑/↓` or `j/k` - Navigate through torrent list
+- `↑/↓` - Navigate through torrent list
 - `Page Up/Page Down` - Navigate by page
 - `Home/End` - Jump to first/last torrent
 
 #### Actions
 
 - `Space` - Pause/Resume selected torrent
-- `d` or `Delete` - Delete selected torrent
-- `a` - Add new torrent
+- `Delete` - Delete selected torrent
+- `Ctrl+A` - Add new torrent
 - `r` - Refresh torrent list
 - `Ctrl+F` - Search torrents
 - `Esc` - Cancel current action/search
