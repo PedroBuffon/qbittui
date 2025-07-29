@@ -68,6 +68,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: "📄 Checkout"
+        uses: actions/checkout@v4
+
       - name: "🔍 Fetch all tags"
         run: git fetch --tags
 
@@ -84,9 +87,6 @@ jobs:
             echo "tag_exists=false" >> $GITHUB_OUTPUT
             echo "Tag ${{ env.RELEASE_VERSION }} does not exist"
           fi
-
-      - name: "📄 Checkout"
-        uses: actions/checkout@v4
 
       - name: "🦀 Setup Rust"
         uses: dtolnay/rust-toolchain@stable
