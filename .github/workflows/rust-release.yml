@@ -110,6 +110,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: "📦 Prepare artifact"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: |
           mkdir -p artifacts
           cp target/${{ matrix.target }}/release/${{ matrix.artifact_name }} artifacts/${{ matrix.asset_name }}
@@ -117,6 +118,7 @@ jobs:
           cp LICENSE artifacts/ || echo "LICENSE file not found"
 
       - name: "📤 Upload artifact"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}
