@@ -25,21 +25,43 @@ jobs:
       - name: "📄 Checkout"
         uses: actions/checkout@v4
 
+      - name: "🔍 Fetch all tags"
+        run: git fetch --tags
+
+      - name: "🔍 Check if tag exists"
+        id: check_tag
+        run: |
+          if git tag -l "${{ env.RELEASE_VERSION }}" | grep -q "${{ env.RELEASE_VERSION }}"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} already exists locally"
+          elif git ls-remote --tags origin "${{ env.RELEASE_VERSION }}" | grep -q "${{ env.RELEASE_VERSION }}"; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} already exists on remote"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "Tag ${{ env.RELEASE_VERSION }} does not exist"
+          fi
+
       - name: "🦀 Setup Rust"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - name: "📋 Check formatting"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: cargo fmt -- --check
 
       - name: "🔍 Clippy lints"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: cargo clippy -- -D warnings
 
       - name: "🧪 Run tests"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: cargo test
 
       - name: "🔧 Check compilation"
+        if: steps.check_tag.outputs.tag_exists == 'false'
         run: cargo check
 
   build:
